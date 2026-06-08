@@ -4,3 +4,6 @@ python-telegram-bot
 requests
 pandas
 numpy
+websocket-client
+setuptools
+git+https://github.com/rongardF/tvdatafeed.git
