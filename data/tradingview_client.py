@@ -1,3 +1,5 @@
+import pandas as pd
+
 from tvDatafeed import TvDatafeed, Interval
 
 
@@ -22,6 +24,22 @@ class TradingViewClient:
 
             if df is None or df.empty:
                 return None
+
+            df = df.reset_index()
+
+            if "datetime" in df.columns:
+                df = df.rename(columns={"datetime": "timestamp"})
+            elif "index" in df.columns:
+                df = df.rename(columns={"index": "timestamp"})
+            elif "timestamp" not in df.columns:
+                df = df.rename(columns={df.columns[0]: "timestamp"})
+
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+            for col in ["open", "high", "low", "close", "volume"]:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+
+            df = df.dropna().reset_index(drop=True)
 
             return df
 
