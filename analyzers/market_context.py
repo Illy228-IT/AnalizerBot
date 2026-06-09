@@ -14,23 +14,93 @@ class MarketContextAnalyzer:
         return {
             "btc": btc,
             "btcd": btcd,
-            "summary": self._build_summary(btc, btcd)
+            "summary": self._build_summary(
+                btc,
+                btcd
+            )
         }
 
-    def _build_summary(self, btc: dict, btcd: dict) -> str:
-        btc_trend = btc["4h"]["trend"]
-        btcd_pressure = btcd["pressure"]
+    def _build_summary(
+        self,
+        btc: dict,
+        btcd: dict
+    ) -> str:
 
-        if btc_trend == "BULLISH" and btcd_pressure == "POSITIVE_FOR_ALTS":
-            return "BTC bullish + BTC.D падає — найкращий фон для LONG по сильних альтах."
+        try:
+            btc_bias = btc.get(
+                "bias",
+                "UNKNOWN"
+            )
 
-        if btc_trend == "BEARISH" and btcd_pressure == "NEGATIVE_FOR_ALTS":
-            return "BTC bearish + BTC.D росте — небезпечний фон для альтів, краще SHORT або WAIT."
+            btcd_pressure = btcd.get(
+                "pressure",
+                "NEUTRAL"
+            )
 
-        if btc_trend == "BULLISH" and btcd_pressure == "NEGATIVE_FOR_ALTS":
-            return "BTC росте, але BTC.D теж росте — альти можуть рости слабше BTC."
+            if (
+                btc_bias == "BULLISH"
+                and btcd_pressure == "POSITIVE_FOR_ALTS"
+            ):
+                return (
+                    "BTC bullish + BTC.D bearish. "
+                    "Найкращий фон для LONG по сильних альтах."
+                )
 
-        if btc_trend == "BEARISH" and btcd_pressure == "POSITIVE_FOR_ALTS":
-            return "BTC падає, BTC.D падає — ринок слабкий, альти можуть бути нестабільні."
+            if (
+                btc_bias == "BEARISH"
+                and btcd_pressure == "NEGATIVE_FOR_ALTS"
+            ):
+                return (
+                    "BTC bearish + BTC.D bullish. "
+                    "Небезпечний фон для альтів. "
+                    "SHORT або WAIT."
+                )
 
-        return "Ринковий фон змішаний — потрібна обережність і підтвердження на 15M."
+            if (
+                btc_bias == "BULLISH"
+                and btcd_pressure == "NEGATIVE_FOR_ALTS"
+            ):
+                return (
+                    "BTC росте, але домінація теж росте. "
+                    "Альти можуть відставати від BTC."
+                )
+
+            if (
+                btc_bias == "BEARISH"
+                and btcd_pressure == "POSITIVE_FOR_ALTS"
+            ):
+                return (
+                    "BTC слабкий, BTC.D падає. "
+                    "Ринок нестабільний, потрібне підтвердження."
+                )
+
+            if btc_bias == "RANGE":
+                return (
+                    "BTC знаходиться у range. "
+                    "Для входів потрібні сильні підтвердження."
+                )
+
+            if btc_bias == "MIXED":
+                return (
+                    "Контекст BTC змішаний. "
+                    "Фільтрація сигналів повинна бути жорсткою."
+                )
+
+            if btc_bias == "PULLBACK_OR_REVERSAL":
+                return (
+                    "BTC може бути в pullback або розвороті. "
+                    "Краще чекати підтвердження."
+                )
+
+            if btc_bias == "CORRECTION_AGAINST_TREND":
+                return (
+                    "BTC показує корекцію проти старшого тренду."
+                )
+
+            return (
+                "Ринковий фон змішаний. "
+                "Потрібно підтвердження на 15M."
+            )
+
+        except Exception as e:
+            return f"Market context error: {e}"
