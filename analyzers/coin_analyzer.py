@@ -1,3 +1,5 @@
+import random
+
 from data.bybit_client import BybitClient
 from config import TIMEFRAMES
 
@@ -21,22 +23,45 @@ class CoinAnalyzer:
         self.order_blocks = OrderBlockAnalyzer()
 
     def analyze(self, symbol: str) -> dict:
-        df_4h = self.client.get_klines(symbol, TIMEFRAMES["4H"])
-        df_1h = self.client.get_klines(symbol, TIMEFRAMES["1H"])
-        df_15m = self.client.get_klines(symbol, TIMEFRAMES["15M"])
+        try:
+            df_4h = self.client.get_klines(
+                symbol,
+                TIMEFRAMES["4H"]
+            )
 
-        return {
-            "symbol": symbol,
-            "price": round(float(df_15m["close"].iloc[-1]), 6),
+            df_1h = self.client.get_klines(
+                symbol,
+                TIMEFRAMES["1H"]
+            )
 
-            "4H": self._analyze_timeframe(df_4h),
-            "1H": self._analyze_timeframe(df_1h),
-            "15M": self._analyze_timeframe(df_15m)
-        }
+            df_15m = self.client.get_klines(
+                symbol,
+                TIMEFRAMES["15M"]
+            )
+
+            return {
+                "symbol": symbol,
+                "price": round(
+                    float(df_15m["close"].iloc[-1]),
+                    6
+                ),
+
+                "4H": self._analyze_timeframe(df_4h),
+                "1H": self._analyze_timeframe(df_1h),
+                "15M": self._analyze_timeframe(df_15m)
+            }
+
+        except Exception as e:
+            return {
+                "symbol": symbol,
+                "error": str(e)
+            }
 
     def _analyze_timeframe(self, df) -> dict:
+        structure = self.structure.analyze(df)
+
         return {
-            "market_structure": self.structure.analyze(df),
+            "market_structure": structure,
             "range": self.ranges.analyze(df),
             "premium_discount": self.premium_discount.analyze(df),
             "liquidity": self.liquidity.analyze(df),
