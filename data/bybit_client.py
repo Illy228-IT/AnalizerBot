@@ -30,16 +30,33 @@ class BybitClient:
 
         df = df.reset_index()
 
-        df = df.rename(
-            columns={
-                "datetime": "timestamp",
-                "open": "open",
-                "high": "high",
-                "low": "low",
-                "close": "close",
-                "volume": "volume"
-            }
-        )
+        if "datetime" in df.columns:
+            df = df.rename(columns={"datetime": "timestamp"})
+        elif "index" in df.columns:
+            df = df.rename(columns={"index": "timestamp"})
+        elif "timestamp" not in df.columns:
+            first_column = df.columns[0]
+            df = df.rename(columns={first_column: "timestamp"})
+
+        required_columns = [
+            "timestamp",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume"
+        ]
+
+        missing_columns = [
+            column for column in required_columns
+            if column not in df.columns
+        ]
+
+        if missing_columns:
+            raise RuntimeError(
+                f"TradingView повернув неправильні колонки для {symbol}: "
+                f"{df.columns.tolist()}"
+            )
 
         df["turnover"] = 0.0
 
@@ -58,7 +75,9 @@ class BybitClient:
         return self._normalize_df(df)
 
     def _normalize_df(self, df: pd.DataFrame) -> pd.DataFrame:
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["timestamp"] = pd.to_datetime(
+            df["timestamp"]
+        )
 
         for column in [
             "open",
@@ -68,9 +87,17 @@ class BybitClient:
             "volume",
             "turnover"
         ]:
-            df[column] = df[column].astype(float)
+            df[column] = pd.to_numeric(
+                df[column],
+                errors="coerce"
+            )
 
-        return df.reset_index(drop=True)
+        df = df.dropna().reset_index(drop=True)
+
+        if df.empty:
+            raise RuntimeError("Після нормалізації TradingView DataFrame порожній")
+
+        return df
 
     def _convert_interval_to_tradingview(self, interval: str):
         intervals = {
